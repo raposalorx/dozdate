@@ -1,31 +1,22 @@
 import System( getArgs )
+import Data.Functor
+import Numeric
 
-translateBase :: Integer -> String
-translateBase 10 = "χ"
-translateBase 11 = "Ɛ"
-translateBase x = show x
+translateBase x = buffer $ showIntAtBase 12 (\ y -> flip (!!) y $ ['0' .. '9'] ++ ['Ӿ', 'Ɛ'] ) x ""
+
+buffer [] = "00"
+buffer (x:[]) = '0':x:[]
+buffer xs = xs
 
 main = do
-	args <- getArgs
-	let hour = read $ args!!0 :: Integer
-	let min = read $ args!!1 :: Integer
-	let sec = read $ args!!2 :: Integer
-	let mil = (read $ args!!3 :: Integer) `div` 1000000
+	args@( hour : min : sec : _ ) <- map read <$> getArgs :: IO [Integer]
+	let mil = flip div 1000000 $ args !! 3
+
 	let time1 = (*) 144 . (+) mil . (*) 1000 . (+) sec $ (+) ((*) hour 3600) ((*) min 60)
-	let time2 = (/) (fromIntegral time1) 25
-	let time = floor $ (/) time2 1000
-	let dozHour1 = translateBase $ floor $ (/) (fromIntegral time) 20736
-	let dozHour2 = translateBase $ mod (floor ((/) (fromIntegral time) 20736)) 12
+	let time = floor $ flip (/) 1000 $ (/) (fromIntegral time1) 25
+
 	let dozMin = div (mod time 20736) 144
-	let dozMin1 = translateBase $ (floor $ (fromIntegral dozMin) / 12)
-	let dozMin2 = translateBase $ mod dozMin 12
 	let dozSec = floor $ fromIntegral $ mod time 144
-	let sec1 = translateBase $ floor $ (/) (fromIntegral dozSec) 12
-	let sec2 = translateBase $ mod dozSec 12
-	let dozSec1 = translateBase $ floor $ (/) (fromIntegral sec) 10
-	let dozSec2 = translateBase $ mod sec 10
 	
-	putStrLn $	(if hour < 12 
-				then "0" ++ (dozHour1) else "1" ++ (dozHour2))
-				++ ":" ++ (dozMin1) ++ (dozMin2) ++ ":" ++ (sec1) ++ (sec2)
+	putStrLn $ (translateBase hour) ++ ":" ++ translateBase dozMin ++ ":" ++ translateBase dozSec
 
