@@ -2,21 +2,20 @@ import System( getArgs )
 import Data.Functor
 import Numeric
 
-translateBase x = buffer $ showIntAtBase 12 (\ y -> flip (!!) y $ ['0' .. '9'] ++ ['Ӿ', 'Ɛ'] ) x ""
-
-buffer [] = "00"
-buffer (x:[]) = '0':x:[]
-buffer xs = xs
+trans i = prep.buffer.translate
+  where translate = showIntAtBase 12 ((['0'..'9']++['Ӿ', 'Ɛ'])!!) i
+        buffer (x:[]) = '0':[x]
+        buffer xs@(x:':':_) = '0':xs
+        buffer xs = xs
+        prep = (':':)
 
 main = do
 	args@( hour : min : sec : _ ) <- map read <$> getArgs :: IO [Integer]
-	let mil = flip div 1000000 $ args !! 3
+	let mil = (`div` 1000000) $ args !! 3
 
-	let time1 = (*) 144 . (+) mil . (*) 1000 . (+) sec $ (+) ((*) hour 3600) ((*) min 60)
-	let time = floor $ flip (/) 1000 $ (/) (fromIntegral time1) 25
+	let time = floor.(/1000).(/25).fromIntegral.(144*).(mil+).(1000*).(sec+) $ (hour*3600)+(min*60)
 
-	let dozMin = div (mod time 20736) 144
-	let dozSec = floor $ fromIntegral $ mod time 144
+	let dozMin = (`div`144).(`mod`20736) $ time
+	let dozSec = floor.fromIntegral.(`mod`144) $ time
 	
-	putStrLn $ (translateBase hour) ++ ":" ++ translateBase dozMin ++ ":" ++ translateBase dozSec
-
+	putStrLn $ drop 1 $ (trans hour).(trans dozMin).(trans dozSec) $ ""
